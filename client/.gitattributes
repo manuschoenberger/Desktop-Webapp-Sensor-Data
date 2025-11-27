@@ -1,0 +1,10 @@
+# Handle line endings
+* text=auto
+
+# Flutter/Dart specifics
+*.dart text eol=lf
+*.yaml text eol=lf
+*.swift text eol=lf
+*.h text eol=lf
+*.cc text eol=lf
+*.cmake text eol=lf
