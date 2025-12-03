@@ -1,0 +1,14 @@
+.idea/
+__pycache__
+.pytest_cache/
+__installed_packages
+[Bb]uild/
+_build/
+_static/
+sdkconfig*
+!sdkconfig.defaults
+managed_components/
+examples/components/
+dependencies.lock
+.vscode
+*.code-workspace
