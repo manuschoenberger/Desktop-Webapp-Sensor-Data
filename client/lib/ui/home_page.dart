@@ -38,16 +38,41 @@ class _HomePageState extends State<HomePage> {
     try {
       serial = SerialSource(selectedPort!, selectedBaudrate);
 
-      final success = serial!.connect((packet) {
-        setState(() {
-          lastPacket = packet;
-          log('Packet: ${packet.payload.length} sensors at ${packet.timestamp}');
-          for (var sensor in packet.payload) {
-            log('  ${sensor.displayName}: ${sensor.data} ${sensor.displayUnit}');
+      final success = serial!.connect(
+        onPacket: (packet) {
+          setState(() {
+            lastPacket = packet;
+            log(
+              'Packet: ${packet.payload.length} sensors at ${packet.timestamp}',
+            );
+            for (var sensor in packet.payload) {
+              log(
+                '  ${sensor.displayName}: ${sensor.data} ${sensor.displayUnit}',
+              );
+            }
+            // later: forward to GraphSection
+          });
+        },
+        onError: (error) {
+          // Handle disconnection
+          log('Serial error: $error');
+
+          // Automatically disconnect and update UI
+          disconnect();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Connection lost: Port $selectedPort disconnected.',
+                ),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
           }
-          // later: forward to GraphSection
-        });
-      });
+        },
+      );
 
       if (success) {
         setState(() {
