@@ -35,11 +35,14 @@ class _HomePageState extends State<HomePage> {
         child: AppMenu(),
       ),
 
-      body: Column(
-        children: [
-          SerialConnectionPanel(viewModel: _connectionModel),
-          Expanded(child: GraphSection(viewModel: _connectionModel)),
-        ],
+      body: ChangeNotifierProvider.value(
+        value: _connectionModel,
+        child: Column(
+          children: [
+            SerialConnectionPanel(viewModel: _connectionModel),
+            const Expanded(child: GraphSection(viewModel: _connectionModel)),
+          ],
+        ),
       ),
     );
   }
