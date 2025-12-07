@@ -17,6 +17,8 @@ class _AppMenuState extends State<AppMenu> {
     final info = await PackageInfo.fromPlatform();
     final version = '${info.version}+${info.buildNumber}';
 
+    if (!context.mounted) return;
+
     showAboutDialog(
       context: context,
       applicationName: 'Sensor Data App',

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
 
 class GraphSection extends StatefulWidget {
-  const GraphSection({super.key});
+  final SerialConnectionViewModel viewModel;
+  const GraphSection({super.key, required this.viewModel});
 
   @override
   State<GraphSection> createState() => _GraphSectionState();
@@ -67,19 +69,105 @@ class _GraphSectionState extends State<GraphSection> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Placeholder for the sensor graph
+        // Graph area with sensor selector overlay
         Expanded(
-          child: Container(
-            width: double.infinity,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            alignment: Alignment.center,
-            child: Text(
-              'Sensor Graph Placeholder',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 22,
+          child: Stack(
+            children: [
+              // Graph background (axes will be drawn here)
+              Container(
+                width: double.infinity,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                alignment: Alignment.center,
+                child: Text(
+                  'Sensor Graph Placeholder',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 22,
+                  ),
+                ),
               ),
-            ),
+
+              // Sensor selector - top right overlay
+              Positioned(
+                top: 16,
+                right: 16,
+                child: ListenableBuilder(
+                  listenable: widget.viewModel,
+                  builder: (context, child) {
+                    final availableSensors = widget.viewModel.availableSensors;
+                    final selectedSensor =
+                        widget.viewModel.selectedSensorForPlot;
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("Data Stream:"),
+                          const SizedBox(width: 8),
+
+                          DropdownButton<String>(
+                            value: selectedSensor,
+                            hint: Text(
+                              'Not connected',
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            items: availableSensors.isEmpty
+                                ? null
+                                : availableSensors.map((sensor) {
+                                    return DropdownMenuItem(
+                                      value: sensor,
+                                      child: Text(sensor),
+                                    );
+                                  }).toList(),
+                            onChanged: availableSensors.isEmpty
+                                ? null
+                                : (newSensor) {
+                                    if (newSensor != null) {
+                                      widget.viewModel.selectSensorForPlot(
+                                        newSensor,
+                                      );
+                                    }
+                                  },
+                          ),
+                          // Show current value if available
+                          if (widget.viewModel.currentSample != null) ...[
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                '${widget.viewModel.currentSample!.value.toStringAsFixed(2)} '
+                                '${widget.viewModel.currentSensorUnit ?? ""}',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
 
