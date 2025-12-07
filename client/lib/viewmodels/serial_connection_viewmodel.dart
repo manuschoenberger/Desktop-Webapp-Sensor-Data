@@ -346,7 +346,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
     if (home == null || home.isEmpty) return;
 
-    final defaultPath = p.join(home, 'SensorDataApp', 'recordings');
+    final defaultPath = p.join(home, 'SensorDash', 'recordings');
     try {
       final dir = Directory(defaultPath);
       if (!dir.existsSync()) {

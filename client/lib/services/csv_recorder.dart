@@ -34,7 +34,7 @@ class CsvRecorder {
       await dir.create(recursive: true);
     }
 
-    // Previously we created a file immediately here. Change: defer file creation until we have a header
+    // Defer file creation until we have a header
     _sink = null;
 
     // Subscribe to incoming packets

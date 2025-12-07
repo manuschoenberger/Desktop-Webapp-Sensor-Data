@@ -63,7 +63,7 @@ class SerialSource {
       (data) {
         final line = utf8.decode(data).trim();
 
-          // Ignore lines that don't look like JSON (ESP log messages)
+          // Ignore lines that are not JSON objects
           if (!line.startsWith('{')) {
             return;
           }
