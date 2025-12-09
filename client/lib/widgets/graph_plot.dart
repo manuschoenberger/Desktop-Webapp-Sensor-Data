@@ -3,9 +3,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class LineChartGraph extends StatelessWidget {
-  const LineChartGraph({super.key, required this.spots});
+  const LineChartGraph({
+    super.key,
+    required this.spots,
+    required this.displayMax,
+  });
 
   final List<FlSpot> spots;
+  final int displayMax;
 
   Widget bottomTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     if (value % 1 != 0) {
@@ -95,6 +100,7 @@ class LineChartGraph extends StatelessWidget {
               ],
               minY: minY,
               maxY: maxY,
+              maxX: displayMax.toDouble(),
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(

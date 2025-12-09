@@ -84,6 +84,9 @@ class _GraphSectionState extends State<GraphSection> {
                   builder: (context, child) {
                     return LineChartGraph(
                       spots: widget.viewModel.visibleGraphPoints,
+                      displayMax:
+                          widget.viewModel.visibleStart.toInt() +
+                          widget.viewModel.visibleRange.toInt(),
                     );
                   },
                 ),

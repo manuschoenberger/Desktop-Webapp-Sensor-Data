@@ -58,6 +58,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   double get visibleRange => _visibleRange;
   bool get graphSliding => _graphSliding;
   String get graphStartTime => _graphStartTime;
+  int get graphIndex => _graphIndex;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -79,6 +80,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
     // reset graph when source changes
     _graphPoints.clear();
     _graphIndex = 0;
+    _visibleStart = 0;
     _graphStartTime = "";
     notifyListeners();
   }
@@ -105,7 +107,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
           addSampleToGraph(sample.value);
           _graphStartTime = _graphStartTime.isNotEmpty
               ? _graphStartTime
-              : "${sample.timestamp.toLocal().year}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().day.toString().padLeft(2, '0')} "
+              : "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
                     "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
 
           notifyListeners();
@@ -214,6 +216,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
     _currentSample = null;
     _availableSensors = [];
     _graphIndex = 0;
+    _visibleStart = 0;
     graphPoints.clear();
     _graphStartTime = "";
 
