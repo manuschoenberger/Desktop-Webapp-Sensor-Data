@@ -47,7 +47,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   SamplingManager? _samplingManager;
   String? _selectedSensorForPlot;
   String? _currentSensorUnit;
-  SampledValue? _currentSample;
+  List<SampledValue>? _currentSamples;
   List<String> _availableSensors = [];
 
   // Plot
@@ -88,7 +88,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   Stream<SensorPacket> get packetStream => _packetController.stream;
   String? get selectedSensorForPlot => _selectedSensorForPlot;
   String? get currentSensorUnit => _currentSensorUnit;
-  SampledValue? get currentSample => _currentSample;
+  List<SampledValue>? get currentSamples => _currentSamples;
   List<String> get availableSensors => _availableSensors;
   List<FlSpot> get graphPoints => _graphPoints;
   double get visibleStart => _visibleStart;
@@ -120,7 +120,6 @@ class SerialConnectionViewModel extends ChangeNotifier {
   void selectSensorForPlot(String sensorName) {
     if (!_isConnected || !_availableSensors.contains(sensorName)) return;
     _selectedSensorForPlot = sensorName;
-    _samplingManager?.selectSensor(sensorName);
     // reset graph when source changes
     _graphPoints.clear();
     _graphIndex = 0;
@@ -209,18 +208,21 @@ class SerialConnectionViewModel extends ChangeNotifier {
           _errorMessage = null;
           notifyListeners();
 
-          // Initialize sampling manager now that we're connected (simulation)
+          // Initialize sampling manager (samples every 1 second)
           _samplingManager = SamplingManager(
-            selectedSensorName: _selectedSensorForPlot,
-            onSampleReady: (sensorName, unit, sample) async {
-              _selectedSensorForPlot = sensorName;
-              _currentSensorUnit = unit;
-              _currentSample = sample;
-              addSampleToGraph(sample.value);
-              _graphStartTime = _graphStartTime.isNotEmpty
-                  ? _graphStartTime
-                  : "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                        "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+              onSampleReady: (samples) {
+                _currentSamples = samples;
+
+                for (var sample in samples) {
+                  // Only add the selected sensor to the graph
+                  if (sample.dataStream == _selectedSensorForPlot) {
+                    addSampleToGraph(sample.value);
+                    _currentSensorUnit = sample.dataUnit;
+
+                    if (_graphStartTime.isEmpty) {
+                      _graphStartTime =
+                      "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                          "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
 
               // Forward sample to recorder if recording
               try {
@@ -320,16 +322,19 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
         // Initialize sampling manager (samples every 1 second)
         _samplingManager = SamplingManager(
-          selectedSensorName: _selectedSensorForPlot,
-          onSampleReady: (sensorName, unit, sample) async {
-            _selectedSensorForPlot = sensorName;
-            _currentSensorUnit = unit;
-            _currentSample = sample;
-            addSampleToGraph(sample.value);
-            _graphStartTime = _graphStartTime.isNotEmpty
-                ? _graphStartTime
-                : "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                      "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+                onSampleReady: (samples) {
+                _currentSamples = samples;
+
+                for (var sample in samples) {
+                // Only add the selected sensor to the graph
+                if (sample.dataStream == _selectedSensorForPlot) {
+                addSampleToGraph(sample.value);
+                _currentSensorUnit = sample.dataUnit;
+
+                if (_graphStartTime.isEmpty) {
+                _graphStartTime =
+                "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
 
             // Forward sample to recorder if recording
             try {
@@ -382,14 +387,15 @@ class SerialConnectionViewModel extends ChangeNotifier {
           _errorMessage = null;
           notifyListeners();
 
-          // Initialize sampling manager for simulation fallback as well
-          _samplingManager = SamplingManager(
-            selectedSensorName: _selectedSensorForPlot,
-            onSampleReady: (sensorName, unit, sample) async {
-              _selectedSensorForPlot = sensorName;
-              _currentSensorUnit = unit;
-              _currentSample = sample;
-              addSampleToGraph(sample.value);
+                // Initialize sampling manager (samples every 1 second)
+                _samplingManager = SamplingManager(
+                onSampleReady: (samples) {
+                _currentSamples = samples;
+
+                for (var sample in samples) {
+                // Only add the selected sensor to the graph
+                if (sample.dataStream == _selectedSensorForPlot) {
+                addSampleToGraph(sample.value);
 
               try {
                 if (_recorder != null) {
@@ -470,7 +476,6 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
     _selectedSensorForPlot = null;
     _currentSensorUnit = null;
-    _currentSample = null;
     _availableSensors = [];
     _graphIndex = 0;
     _visibleStart = 0;
