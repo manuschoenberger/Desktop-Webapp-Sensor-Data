@@ -2,141 +2,85 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:sensor_data_app/models/sensor_packet.dart';
+import 'package:sensor_data_app/models/sampled_value.dart';
 
-/// CsvRecorder writes sensor packets into a CSV file every second.
-/// It subscribes to a packet stream and keeps the latest packet in memory.
-/// Every second it writes a new CSV row with the packet's timestamp and values.
+/// CsvRecorder expects prepared samples to be forwarded to it via
+/// `recordSample(sensorName, unit, sample)`.
 class CsvRecorder {
   final String folderPath;
-  final Stream<SensorPacket> packetStream;
   final String baseFileName;
 
-  StreamSubscription<SensorPacket>? _subscription;
-  Timer? _timer;
-
-  SensorPacket? _latestPacket;
   IOSink? _sink;
   File? _file;
-
-  List<String>? _currentHeaderColumns;
+  String? _currentSensorColumnLabel;
+  bool _started = false;
 
   CsvRecorder({
     required this.folderPath,
-    required this.packetStream,
     String? baseFileName,
   }) : baseFileName = baseFileName ?? 'sensor_record';
 
   Future<void> start() async {
-    // Ensure folder exists
     final dir = Directory(folderPath);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
-
-    // Defer file creation until we have a header
-    _sink = null;
-
-    // Subscribe to incoming packets
-    _subscription = packetStream.listen((pkt) {
-      _onPacket(pkt);
-    }, onError: (e) {
-      // ignore for now
-    });
-
-    // Start periodic writer
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
-      try {
-        await _writeRowIfAvailable();
-      } catch (e) {
-        await stop();
-      }
-    });
+    _started = true;
   }
 
   Future<void> stop() async {
-    try {
-      _timer?.cancel();
-    } catch (_) {}
-    _timer = null;
-
-    try {
-      await _subscription?.cancel();
-    } catch (_) {}
-    _subscription = null;
-
+    _started = false;
     try {
       await _sink?.flush();
       await _sink?.close();
     } catch (_) {}
     _sink = null;
     _file = null;
-    _latestPacket = null;
-    _currentHeaderColumns = null;
+    _currentSensorColumnLabel = null;
   }
 
-  void _onPacket(SensorPacket pkt) {
-    // Update latest packet
-    _latestPacket = pkt;
-
-    // If header not written yet, write header based on this packet
-    final header = _buildHeaderColumns(pkt);
-    if (_currentHeaderColumns == null || !_listEquals(_currentHeaderColumns!, header)) {
-      // If header changed, rotate file (close current and open new file)
-      _rotateFileWithHeader(header);
+  /// Record a prepared sample into the CSV. This method is safe to call even
+  /// if the recorder hasn't been started; it will try to create the folder
+  /// on demand. Rows are written immediately.
+  Future<void> recordSample(String sensorName, String unit, SampledValue sample) async {
+    if (!_started) {
+      // Try to auto-start so callers don't have to manage ordering strictly
+      await start();
     }
-  }
 
-  List<String> _buildHeaderColumns(SensorPacket pkt) {
-    final cols = <String>[];
-    cols.add('timestamp');
-    for (var s in pkt.payload) {
-      cols.add('${s.displayName} [${s.displayUnit}]');
+    final columnLabel = '$sensorName [${unit ?? ''}]';
+
+    // If sensor/unit changed (or no file yet), rotate file
+    if (_sink == null || _currentSensorColumnLabel == null || _currentSensorColumnLabel != columnLabel) {
+      await _rotateFileWithHeader(columnLabel, sample.timestamp);
     }
-    return cols;
+
+    final unix = sample.timestamp.millisecondsSinceEpoch ~/ 1000;
+    final values = <String>[];
+    values.add(unix.toString());
+    values.add(sample.value.toString());
+    values.add(sample.sampleCount.toString());
+
+    final escaped = values.map((v) => '"' + v.replaceAll('"', '""') + '"').join(',');
+    _sink!.writeln(escaped);
+    await _sink!.flush();
   }
 
-  Future<void> _rotateFileWithHeader(List<String> header) async {
-    // Close existing sink
+  Future<void> _rotateFileWithHeader(String sensorColumn, DateTime now) async {
     try {
       await _sink?.flush();
       await _sink?.close();
     } catch (_) {}
 
-    // Create new file with timestamped name
-    final now = DateTime.now();
     final timestamp = _formatDate(now);
     final filename = '${baseFileName}_$timestamp.csv';
     _file = File(p.join(folderPath, filename));
     _sink = _file!.openWrite(mode: FileMode.write);
 
-    // Write header
-    _currentHeaderColumns = header;
+    _currentSensorColumnLabel = sensorColumn;
+
+    final header = ['timestamp', sensorColumn, 'sampleCount'];
     final escaped = header.map((c) => '"' + c.replaceAll('"', '""') + '"').join(',');
-    _sink!.writeln(escaped);
-    await _sink!.flush();
-  }
-
-  Future<void> _writeRowIfAvailable() async {
-    final pkt = _latestPacket;
-    if (pkt == null) return; // nothing to write yet
-
-    if (_sink == null || _currentHeaderColumns == null) {
-      // No header/file yet; try to create from latest packet
-      final header = _buildHeaderColumns(pkt);
-      await _rotateFileWithHeader(header);
-    }
-
-    // Build row: timestamp (as unix seconds) + values
-    final unix = pkt.timestamp.millisecondsSinceEpoch ~/ 1000;
-    final values = <String>[];
-    values.add(unix.toString());
-
-    for (var s in pkt.payload) {
-      values.add(s.data.toString());
-    }
-
-    final escaped = values.map((v) => '"' + v.replaceAll('"', '""') + '"').join(',');
     _sink!.writeln(escaped);
     await _sink!.flush();
   }
@@ -144,13 +88,5 @@ class CsvRecorder {
   String _formatDate(DateTime dt) {
     String two(int v) => v.toString().padLeft(2, '0');
     return '${dt.year}${two(dt.month)}${two(dt.day)}_${two(dt.hour)}${two(dt.minute)}${two(dt.second)}';
-  }
-
-  bool _listEquals(List a, List b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 }

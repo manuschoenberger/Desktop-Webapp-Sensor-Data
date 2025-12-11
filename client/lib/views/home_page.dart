@@ -3,6 +3,7 @@ import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
 import '../widgets/graph_section.dart';
 import '../widgets/serial_connection_panel.dart';
 import 'app_menu.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -40,7 +41,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             SerialConnectionPanel(viewModel: _connectionModel),
-            const Expanded(child: GraphSection(viewModel: _connectionModel)),
+            Expanded(child: GraphSection(viewModel: _connectionModel)),
           ],
         ),
       ),

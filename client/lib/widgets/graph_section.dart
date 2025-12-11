@@ -3,6 +3,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_data_app/widgets/graph_plot.dart';
 
 class GraphSection extends StatefulWidget {
   final SerialConnectionViewModel viewModel;
@@ -75,17 +76,22 @@ class _GraphSectionState extends State<GraphSection> {
         Expanded(
           child: Stack(
             children: [
-              // Graph background (axes will be drawn here)
+              // Graph plot
               Container(
                 width: double.infinity,
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 alignment: Alignment.center,
-                child: Text(
-                  'Sensor Graph Placeholder',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 22,
-                  ),
+                child: ListenableBuilder(
+                  listenable: widget.viewModel,
+                  builder: (context, child) {
+                    return LineChartGraph(
+                      spots: widget.viewModel.visibleGraphPoints,
+                      displayMax:
+                          widget.viewModel.visibleStart.toInt() +
+                          widget.viewModel.visibleRange.toInt(),
+                      sensorUnit: widget.viewModel.currentSensorUnit,
+                    );
+                  },
                 ),
               ),
 
@@ -172,6 +178,81 @@ class _GraphSectionState extends State<GraphSection> {
             ],
           ),
         ),
+
+        Container(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              // Starttime for plot
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Start Time:",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    ListenableBuilder(
+                      listenable: widget.viewModel,
+                      builder: (context, child) {
+                        return Text(
+                          widget.viewModel.graphStartTime != ""
+                              ? widget.viewModel.graphStartTime
+                              : "Not Connected",
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Slider
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ListenableBuilder(
+                    listenable: widget.viewModel,
+                    builder: (context, child) {
+                      final max = widget.viewModel.maxGraphWindowStart;
+                      final current = widget.viewModel.visibleStart.clamp(
+                        0,
+                        max,
+                      );
+
+                      return Slider(
+                        min: 0,
+                        max: max > 0 ? max : 0.0001,
+                        value: current.toDouble(),
+                        onChanged: max == 0
+                            ? null
+                            : (value) =>
+                                  widget.viewModel.updateVisibleStart(value),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // Reset button for slider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: ElevatedButton(
+                  onPressed: widget.viewModel.resetGraph,
+                  child: Text("Back to Current"),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
