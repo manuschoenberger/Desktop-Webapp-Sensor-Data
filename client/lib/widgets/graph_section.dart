@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
 import 'package:sensor_data_app/widgets/graph_plot.dart';
 
@@ -13,10 +14,9 @@ class GraphSection extends StatefulWidget {
 }
 
 class _GraphSectionState extends State<GraphSection> {
-  String? selectedFolderPath;
   bool isRecording = true;
 
-  Future<void> _pickFolder() async {
+  Future<void> _pickFolder(SerialConnectionViewModel vm) async {
     try {
       String? folderPath;
 
@@ -33,9 +33,8 @@ class _GraphSectionState extends State<GraphSection> {
       if (!mounted) return;
 
       if (folderPath != null) {
-        setState(() {
-          selectedFolderPath = folderPath;
-        });
+        // Save to viewmodel so recorder can pick it up
+        vm.setSaveFolderPath(folderPath);
 
         ScaffoldMessenger.of(
           context,
@@ -68,6 +67,9 @@ class _GraphSectionState extends State<GraphSection> {
 
   @override
   Widget build(BuildContext context) {
+    final vm = Provider.of<SerialConnectionViewModel>(context);
+    final selectedFolderPath = vm.saveFolderPath;
+
     return Column(
       children: [
         // Graph area with sensor selector overlay
@@ -311,7 +313,7 @@ class _GraphSectionState extends State<GraphSection> {
                   vertical: 16,
                 ),
               ),
-              onPressed: _pickFolder,
+              onPressed: () => _pickFolder(vm),
               child: const Text("Select Save Folder"),
             ),
           ],

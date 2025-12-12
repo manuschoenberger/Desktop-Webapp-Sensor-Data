@@ -4,6 +4,7 @@ import '../main.dart';
 import '../widgets/graph_section.dart';
 import '../widgets/serial_connection_panel.dart';
 import 'app_menu.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -39,11 +40,14 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      body: Column(
-        children: [
-          SerialConnectionPanel(viewModel: _connectionModel),
-          Expanded(child: GraphSection(viewModel: _connectionModel)),
-        ],
+      body: ChangeNotifierProvider.value(
+        value: _connectionModel,
+        child: Column(
+          children: [
+            SerialConnectionPanel(viewModel: _connectionModel),
+            Expanded(child: GraphSection(viewModel: _connectionModel)),
+          ],
+        ),
       ),
     );
   }
