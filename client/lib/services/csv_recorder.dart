@@ -15,10 +15,8 @@ class CsvRecorder {
   String? _currentSensorColumnLabel;
   bool _started = false;
 
-  CsvRecorder({
-    required this.folderPath,
-    String? baseFileName,
-  }) : baseFileName = baseFileName ?? 'sensor_record';
+  CsvRecorder({required this.folderPath, String? baseFileName})
+    : baseFileName = baseFileName ?? 'sensor_record';
 
   Future<void> start() async {
     final dir = Directory(folderPath);
@@ -42,16 +40,22 @@ class CsvRecorder {
   /// Record a prepared sample into the CSV. This method is safe to call even
   /// if the recorder hasn't been started; it will try to create the folder
   /// on demand. Rows are written immediately.
-  Future<void> recordSample(String sensorName, String unit, SampledValue sample) async {
+  Future<void> recordSample(
+    String sensorName,
+    String unit,
+    SampledValue sample,
+  ) async {
     if (!_started) {
       // Try to auto-start so callers don't have to manage ordering strictly
       await start();
     }
 
-    final columnLabel = '$sensorName [${unit ?? ''}]';
+    final columnLabel = '$sensorName [$unit]';
 
     // If sensor/unit changed (or no file yet), rotate file
-    if (_sink == null || _currentSensorColumnLabel == null || _currentSensorColumnLabel != columnLabel) {
+    if (_sink == null ||
+        _currentSensorColumnLabel == null ||
+        _currentSensorColumnLabel != columnLabel) {
       await _rotateFileWithHeader(columnLabel, sample.timestamp);
     }
 
@@ -61,7 +65,7 @@ class CsvRecorder {
     values.add(sample.value.toString());
     values.add(sample.sampleCount.toString());
 
-    final escaped = values.map((v) => '"' + v.replaceAll('"', '""') + '"').join(',');
+    final escaped = values.map((v) => '"${v.replaceAll('"', '""')}"').join(',');
     _sink!.writeln(escaped);
     await _sink!.flush();
   }
@@ -80,7 +84,7 @@ class CsvRecorder {
     _currentSensorColumnLabel = sensorColumn;
 
     final header = ['timestamp', sensorColumn, 'sampleCount'];
-    final escaped = header.map((c) => '"' + c.replaceAll('"', '""') + '"').join(',');
+    final escaped = header.map((c) => '"${c.replaceAll('"', '""')}"').join(',');
     _sink!.writeln(escaped);
     await _sink!.flush();
   }

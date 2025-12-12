@@ -4,7 +4,6 @@ import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_data_app/services/json_parser.dart';
 import 'package:sensor_data_app/models/sensor_packet.dart';
 import 'dart:async';
-import 'dart:convert';
 
 typedef PacketCallback = void Function(SensorPacket packet);
 typedef ErrorCallback = void Function(String error);
@@ -32,13 +31,13 @@ class SerialSource {
           {
             'displayName': 'Temperature',
             'displayUnit': '°C',
-            'data': 20 + (_simCounter % 5) + (0.1 * (_simCounter % 10))
+            'data': 20 + (_simCounter % 5) + (0.1 * (_simCounter % 10)),
           },
           {
             'displayName': 'Humidity',
             'displayUnit': '%',
-            'data': 40 + (_simCounter % 10)
-          }
+            'data': 40 + (_simCounter % 10),
+          },
         ];
         final jsonLine = jsonEncode({'timestamp': ts, 'payload': payload});
         final packet = SensorJsonParser.parse(jsonLine);
@@ -58,10 +57,10 @@ class SerialSource {
         return false;
       }
 
-    reader = SerialPortReader(port!);
-    reader!.stream.listen(
-      (data) {
-        final line = utf8.decode(data).trim();
+      reader = SerialPortReader(port!);
+      reader!.stream.listen(
+        (data) {
+          final line = utf8.decode(data).trim();
 
           // Ignore lines that are not JSON objects
           if (!line.startsWith('{')) {
