@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v*'
   pull_request:
 
 jobs:
@@ -36,6 +38,41 @@ jobs:
       - name: Build release
         run: flutter build linux --release
         working-directory: client
+        
+      - name: Create Debian package
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          APP_NAME=desktop-webapp
+          VERSION=${GITHUB_REF_NAME#v}
+          ARCH=amd64
+
+          PKG_DIR=${APP_NAME}_${VERSION}_${ARCH}
+          mkdir -p $PKG_DIR/DEBIAN
+          mkdir -p $PKG_DIR/usr/local/bin/$APP_NAME
+
+          cp -r client/build/linux/x64/release/bundle/* \
+                $PKG_DIR/usr/local/bin/$APP_NAME/
+
+          cat <<EOF > $PKG_DIR/DEBIAN/control
+          Package: $APP_NAME
+          Version: $VERSION
+          Section: base
+          Priority: optional
+          Architecture: $ARCH
+          Maintainer: Roncero, Schonberger, Schneider
+          Description: SensorDash desktop application
+          EOF
+
+          dpkg-deb --build $PKG_DIR
+          mkdir -p dist
+          mv ${PKG_DIR}.deb dist/
+
+      - name: Upload .deb to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.deb
+
 
       - name: Sanitize branch name
         id: sanitize
