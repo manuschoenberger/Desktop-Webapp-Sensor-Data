@@ -62,6 +62,9 @@ jobs:
       - name: Enable macOS desktop
         run: flutter config --enable-macos-desktop
         working-directory: client
+        
+      - name: Install macOS native dependencies
+        run: brew install automake libtool
 
       - name: Flutter pub get
         run: flutter pub get
