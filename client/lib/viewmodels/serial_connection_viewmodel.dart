@@ -47,11 +47,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
   SamplingManager? _samplingManager;
   String? _selectedSensorForPlot;
   String? _currentSensorUnit;
-  SampledValue? _currentSample;
+  List<SampledValue>? _currentSamples;
   List<String> _availableSensors = [];
 
   // Plot
-  final List<FlSpot> _graphPoints = [];
+  final Map<String, List<FlSpot>> _graphPoints = {};
   int _graphIndex = 0;
   double _visibleStart = 0;
   double _visibleRange = 60;
@@ -88,9 +88,9 @@ class SerialConnectionViewModel extends ChangeNotifier {
   Stream<SensorPacket> get packetStream => _packetController.stream;
   String? get selectedSensorForPlot => _selectedSensorForPlot;
   String? get currentSensorUnit => _currentSensorUnit;
-  SampledValue? get currentSample => _currentSample;
+  List<SampledValue>? get currentSamples => _currentSamples;
   List<String> get availableSensors => _availableSensors;
-  List<FlSpot> get graphPoints => _graphPoints;
+  Map<String, List<FlSpot>> get graphPoints => _graphPoints;
   double get visibleStart => _visibleStart;
   double get visibleRange => _visibleRange;
   bool get graphSliding => _graphSliding;
@@ -120,12 +120,6 @@ class SerialConnectionViewModel extends ChangeNotifier {
   void selectSensorForPlot(String sensorName) {
     if (!_isConnected || !_availableSensors.contains(sensorName)) return;
     _selectedSensorForPlot = sensorName;
-    _samplingManager?.selectSensor(sensorName);
-    // reset graph when source changes
-    _graphPoints.clear();
-    _graphIndex = 0;
-    _visibleStart = 0;
-    _graphStartTime = "";
     notifyListeners();
   }
 
@@ -209,28 +203,39 @@ class SerialConnectionViewModel extends ChangeNotifier {
           _errorMessage = null;
           notifyListeners();
 
-          // Initialize sampling manager now that we're connected (simulation)
+          // Initialize sampling manager (samples every 1 second)
           _samplingManager = SamplingManager(
-            selectedSensorName: _selectedSensorForPlot,
-            onSampleReady: (sensorName, unit, sample) async {
-              _selectedSensorForPlot = sensorName;
-              _currentSensorUnit = unit;
-              _currentSample = sample;
-              addSampleToGraph(sample.value);
-              _graphStartTime = _graphStartTime.isNotEmpty
-                  ? _graphStartTime
-                  : "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                        "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+            onSampleReady: (samples) async {
+              _currentSamples = samples;
 
-              // Forward sample to recorder if recording
-              try {
-                if (_recorder != null) {
-                  await _recorder!.recordSample(sensorName, unit, sample);
+              for (var sample in samples) {
+                // Add sample to graph if recording
+                addSampleToGraph(sample.dataStream, sample.value);
+                _currentSensorUnit = sample.dataUnit;
+
+                if (_graphStartTime.isEmpty && _isRecording) {
+                  _graphStartTime =
+                      "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                      "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
                 }
-              } catch (e) {
-                // ignore recording errors for now
+
+                // Forward sample to recorder if recording
+                try {
+                  if (_recorder != null && _isRecording) {
+                    await _recorder!.recordSample(
+                      sample.dataStream,
+                      sample.dataUnit,
+                      sample,
+                    );
+                  }
+                } catch (e) {
+                  // ignore recording errors for now
+                }
               }
 
+              if (_recorder != null && _isRecording) {
+                _graphIndex++;
+              }
               notifyListeners();
             },
           );
@@ -320,26 +325,37 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
         // Initialize sampling manager (samples every 1 second)
         _samplingManager = SamplingManager(
-          selectedSensorName: _selectedSensorForPlot,
-          onSampleReady: (sensorName, unit, sample) async {
-            _selectedSensorForPlot = sensorName;
-            _currentSensorUnit = unit;
-            _currentSample = sample;
-            addSampleToGraph(sample.value);
-            _graphStartTime = _graphStartTime.isNotEmpty
-                ? _graphStartTime
-                : "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                      "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+          onSampleReady: (samples) async {
+            _currentSamples = samples;
 
-            // Forward sample to recorder if recording
-            try {
-              if (_recorder != null) {
-                await _recorder!.recordSample(sensorName, unit, sample);
+            for (var sample in samples) {
+              // Only add the selected sensor to the graph
+              addSampleToGraph(sample.dataStream, sample.value);
+              _currentSensorUnit = sample.dataUnit;
+
+              if (_graphStartTime.isEmpty && _isRecording) {
+                _graphStartTime =
+                    "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                    "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
               }
-            } catch (e) {
-              // ignore recording errors for now
+
+              // Forward sample to recorder if recording
+              try {
+                if (_recorder != null && _isRecording) {
+                  await _recorder!.recordSample(
+                    sample.dataStream,
+                    sample.dataUnit,
+                    sample,
+                  );
+                }
+              } catch (e) {
+                // ignore recording errors for now
+              }
             }
 
+            if (_recorder != null && _isRecording) {
+              _graphIndex++;
+            }
             notifyListeners();
           },
         );
@@ -382,23 +398,31 @@ class SerialConnectionViewModel extends ChangeNotifier {
           _errorMessage = null;
           notifyListeners();
 
-          // Initialize sampling manager for simulation fallback as well
+          // Initialize sampling manager (samples every 1 second)
           _samplingManager = SamplingManager(
-            selectedSensorName: _selectedSensorForPlot,
-            onSampleReady: (sensorName, unit, sample) async {
-              _selectedSensorForPlot = sensorName;
-              _currentSensorUnit = unit;
-              _currentSample = sample;
-              addSampleToGraph(sample.value);
+            onSampleReady: (samples) async {
+              _currentSamples = samples;
 
-              try {
-                if (_recorder != null) {
-                  await _recorder!.recordSample(sensorName, unit, sample);
+              for (var sample in samples) {
+                // Only add the selected sensor to the graph
+                addSampleToGraph(sample.dataStream, sample.value);
+
+                try {
+                  if (_recorder != null && _isRecording) {
+                    await _recorder!.recordSample(
+                      sample.dataStream,
+                      sample.dataUnit,
+                      sample,
+                    );
+                  }
+                } catch (e) {
+                  // ignore recording errors for now
                 }
-              } catch (e) {
-                // ignore recording errors for now
               }
 
+              if (_recorder != null && _isRecording) {
+                _graphIndex++;
+              }
               notifyListeners();
             },
           );
@@ -418,25 +442,34 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
   // Plot graph
   List<FlSpot> get visibleGraphPoints {
-    return graphPoints.where((spot) {
-      return spot.x >= _visibleStart && spot.x <= _visibleStart + _visibleRange;
-    }).toList();
+    return graphPoints[_selectedSensorForPlot]
+            ?.where(
+              (spot) =>
+                  spot.x >= _visibleStart &&
+                  spot.x <= _visibleStart + _visibleRange,
+            )
+            .toList() ??
+        const [];
   }
 
-  void addSampleToGraph(double value) {
+  void addSampleToGraph(String dataStream, double value) {
     if (!_isRecording) return; // Only plot when recording
-    graphPoints.add(FlSpot(_graphIndex.toDouble(), value));
-    _graphIndex++;
+    _graphPoints.putIfAbsent(dataStream, () => []);
+    _graphPoints[dataStream]!.add(FlSpot(_graphIndex.toDouble(), value));
+
     if (!_graphSliding) {
       _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
     }
+
     notifyListeners();
   }
 
   // Slider for Graph Plot
   double get maxGraphWindowStart {
-    if (graphPoints.length <= _visibleRange) return 0;
-    return (graphPoints.length - _visibleRange).toDouble();
+    if ((_graphIndex - 1) <= _visibleRange) {
+      return 0;
+    }
+    return ((_graphIndex - 1) - _visibleRange).toDouble();
   }
 
   void updateVisibleStart(double value) {
@@ -470,7 +503,6 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
     _selectedSensorForPlot = null;
     _currentSensorUnit = null;
-    _currentSample = null;
     _availableSensors = [];
     _graphIndex = 0;
     _visibleStart = 0;
