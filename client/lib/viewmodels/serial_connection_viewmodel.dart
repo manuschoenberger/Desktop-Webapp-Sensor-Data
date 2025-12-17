@@ -214,7 +214,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
                   addSampleToGraph(sample.dataStream, sample.value);
                   _currentSensorUnit = sample.dataUnit;
 
-                  if (_graphStartTime.isEmpty) {
+                  if (_graphStartTime.isEmpty && _isRecording) {
                     _graphStartTime =
                         "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
                         "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
@@ -224,7 +224,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
                 // Forward sample to recorder if recording
                 try {
                   if (_recorder != null && _isRecording) {
-                    await _recorder!.recordSample(sample.dataStream, sample.dataUnit, sample);
+                    await _recorder!.recordSample(
+                      sample.dataStream,
+                      sample.dataUnit,
+                      sample,
+                    );
                   }
                 } catch (e) {
                   // ignore recording errors for now
@@ -330,7 +334,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
                 addSampleToGraph(sample.dataStream, sample.value);
                 _currentSensorUnit = sample.dataUnit;
 
-                if (_graphStartTime.isEmpty) {
+                if (_graphStartTime.isEmpty && _isRecording) {
                   _graphStartTime =
                       "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
                       "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
@@ -340,7 +344,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
               // Forward sample to recorder if recording
               try {
                 if (_recorder != null && _isRecording) {
-                  await _recorder!.recordSample(sample.dataStream, sample.dataUnit, sample);
+                  await _recorder!.recordSample(
+                    sample.dataStream,
+                    sample.dataUnit,
+                    sample,
+                  );
                 }
               } catch (e) {
                 // ignore recording errors for now
@@ -403,7 +411,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
                 try {
                   if (_recorder != null && _isRecording) {
-                    await _recorder!.recordSample(sample.dataStream, sample.dataUnit, sample);
+                    await _recorder!.recordSample(
+                      sample.dataStream,
+                      sample.dataUnit,
+                      sample,
+                    );
                   }
                 } catch (e) {
                   // ignore recording errors for now
