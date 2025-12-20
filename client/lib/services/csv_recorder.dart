@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:sensor_data_app/models/sampled_value.dart';
+import 'package:sensor_dash/models/sampled_value.dart';
 
 /// CsvRecorder expects prepared samples to be forwarded to it via
 /// `recordSample(sensorName, unit, sample)`.

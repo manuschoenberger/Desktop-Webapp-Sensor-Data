@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:sensor_data_app/theme/app_theme.dart';
+import 'package:sensor_dash/theme/app_theme.dart';
 import 'views/home_page.dart';
 import 'package:window_size/window_size.dart';
 

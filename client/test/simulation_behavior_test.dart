@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:sensor_data_app/services/serial_source.dart';
-import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/services/serial_source.dart';
+import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
 
 class FakeSerialSource extends SerialSource {
   final bool _connectResult;

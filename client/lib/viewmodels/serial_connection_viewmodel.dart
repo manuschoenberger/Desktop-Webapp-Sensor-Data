@@ -1,15 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:sensor_data_app/models/sampled_value.dart';
-import 'package:sensor_data_app/services/serial_source.dart';
-import 'package:sensor_data_app/services/sampling_manager.dart';
+import 'package:sensor_dash/models/sampled_value.dart';
+import 'package:sensor_dash/services/serial_source.dart';
+import 'package:sensor_dash/services/sampling_manager.dart';
 import 'dart:developer';
 import 'dart:async';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-import 'package:sensor_data_app/services/csv_recorder.dart';
-import 'package:sensor_data_app/models/sensor_packet.dart';
+import 'package:sensor_dash/services/csv_recorder.dart';
+import 'package:sensor_dash/models/sensor_packet.dart';
 
 class SerialConnectionViewModel extends ChangeNotifier {
   final SerialSource Function(String port, int baud, {bool simulate})
