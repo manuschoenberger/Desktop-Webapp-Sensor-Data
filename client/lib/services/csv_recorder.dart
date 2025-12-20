@@ -8,11 +8,13 @@ class CsvRecorder {
   final String folderPath;
   final String baseFileName;
 
-  // List of expected sensor names in the order they should appear in the CSV.
-  final List<String> sensors;
+  final List<String> sensors; // Optional initial list of expected sensor names (human readable)
+  late List<String> _sensorKeys; // Normalized sensor keys used for mapping incoming samples to CSV columns.
 
-  // Normalized sensor keys used for mapping incoming samples to CSV columns.
-  late final List<String> _sensorKeys;
+  bool _sensorsLocked = false; // Whether the sensor list has been locked (header written and will not change for the rest of this CSV file). When locked, new sensor names will trigger the onSensorsChanged callback instead of expanding the CSV columns.
+  bool _headerWritten = false;
+
+  final void Function(List<String> newSensors)? onSensorsChanged; // Optional callback invoked when a new sensor is observed after sensors are locked.
 
   IOSink? _sink;
   File? _file;
@@ -20,12 +22,35 @@ class CsvRecorder {
 
   final Map<int, Map<String, Map<String, String>>> _pending = {};
 
-  CsvRecorder({required this.folderPath, String? baseFileName, List<String>? sensors})
+  CsvRecorder({required this.folderPath, String? baseFileName, List<String>? sensors, this.onSensorsChanged})
       : baseFileName = baseFileName ?? 'sensor_record',
-        sensors = sensors ?? const ['temperature', 'humidity'] {
+        sensors = sensors ?? const [] {
+    // Use a (possibly empty) initial sensors list. If non-empty, lock it.
     _sensorKeys = this.sensors
         .map((s) => s.trim().toLowerCase().replaceAll(RegExp(r"\s+"), ''))
         .toList();
+    if (_sensorKeys.isNotEmpty) {
+      _sensorsLocked = true;
+    }
+  }
+
+  bool get sensorsLocked => _sensorsLocked; // Returns whether the recorder has already locked the initial sensor set.
+
+  /// Lock the initial sensors (called by the caller when the first sample batch
+  /// is known). If already locked, this is a no-op. The provided list will be
+  /// normalized and used to write the header if the file/sink is already open.
+  void setInitialSensors(List<String> initialSensors) {
+    if (_sensorsLocked) return;
+    _sensorKeys = initialSensors
+        .map((s) => s.trim().toLowerCase().replaceAll(RegExp(r"\s+"), ''))
+        .toList();
+    _sensorsLocked = true;
+
+    // If the sink is open but header not written yet, write it now.
+    if (_sink != null && !_headerWritten) {
+      _writeHeader();
+      _headerWritten = true;
+    }
   }
 
   Future<void> start() async {
@@ -47,28 +72,45 @@ class CsvRecorder {
     _sink = null;
     _file = null;
     _pending.clear();
+    _headerWritten = false;
+    _sensorsLocked = false;
   }
 
   /// Record a prepared sample into the CSV. This method is safe to call even
   /// if the recorder hasn't been started; it will try to create the folder
-  /// on demand. Rows are written only when all expected sensors for a
-  /// timestamp have been received (one row per unix-second timestamp). Partial
-  /// rows are flushed when `stop()` is called.
+  /// on demand.
+  ///
+  /// Important:
+  /// - If a new sensor is observed after the sensor set was locked, the
+  ///   recorder will invoke the optional `onSensorsChanged` callback and will
+  ///   continue writing CSV rows using the initial columns only.
   Future<void> recordSample(
     String sensorName,
     String unit,
     SampledValue sample,
   ) async {
     if (!_started) {
-      // Try to auto-start so callers don't have to manage ordering strictly
       await start();
     }
 
-    // Ensure the output file/sink exists and header has been written.
     await _ensureFileOpen(sample.timestamp);
 
     final unix = sample.timestamp.millisecondsSinceEpoch ~/ 1000;
     final key = _normalizeSensorName(sensorName);
+
+    // If sensors are locked and this key is unknown -> notify about change and do not add it to CSV columns.
+    if (_sensorsLocked && !_sensorKeys.contains(key)) {
+      try {
+        onSensorsChanged?.call([sensorName]);
+      } catch (_) {}
+      // Still collect the sample in pending so that a later call to _flushRemaining will not lose it entirely, but won't include it in CSV columns.
+      _pending.putIfAbsent(unix, () => {});
+      _pending[unix]![key] = {
+        'unit': unit,
+        'value': sample.value.toString(),
+      };
+      return;
+    }
 
     _pending.putIfAbsent(unix, () => {});
     _pending[unix]![key] = {
@@ -76,7 +118,11 @@ class CsvRecorder {
       'value': sample.value.toString(),
     };
 
-    if (_pending[unix]!.length == _sensorKeys.length) {
+    /// If sensors are locked, we know how many columns to expect for a complete
+    /// row and can write it when all are present. If sensors are not yet locked
+    /// we won't attempt to write rows here - the caller is expected to lock the
+    /// sensor set first (see setInitialSensors).
+    if (_sensorsLocked && _pending[unix]!.length == _sensorKeys.length) {
       await _writeRowForTimestamp(unix);
     }
   }
@@ -89,8 +135,13 @@ class CsvRecorder {
     _file = File(p.join(folderPath, filename));
     _sink = _file!.openWrite(mode: FileMode.write);
 
-    // Write header line according to the configured sensors.
-    _writeHeader();
+    /// Write header immediately only if sensors are already locked; otherwise
+    /// header will be written later from setInitialSensors when initial sensors
+    /// are provided.
+    if (_sensorsLocked && !_headerWritten) {
+      _writeHeader();
+      _headerWritten = true;
+    }
   }
 
   void _writeHeader() {
@@ -132,8 +183,16 @@ class CsvRecorder {
   Future<void> _flushRemaining() async {
     if (_pending.isEmpty) return;
     final keys = _pending.keys.toList()..sort();
+
+    /// If header hasn't been written but sensors have been locked (possible when
+    /// setInitialSensors was called after file open), ensure header is written
+    /// before flushing rows.
+    if (_sensorsLocked && !_headerWritten) {
+      _writeHeader();
+      _headerWritten = true;
+    }
+
     for (final k in keys) {
-      // write partial row (missing sensors become empty fields)
       await _writeRowForTimestamp(k);
     }
   }

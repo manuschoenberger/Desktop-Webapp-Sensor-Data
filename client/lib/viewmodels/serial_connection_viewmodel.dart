@@ -342,6 +342,12 @@ class SerialConnectionViewModel extends ChangeNotifier {
               // Forward sample to recorder if recording
               try {
                 if (_recorder != null && _isRecording) {
+                  // If recorder sensors aren't locked yet, lock them on first batch
+                  if (!_recorder!.sensorsLocked) {
+                    final initial = samples.map((s) => s.dataStream).toList();
+                    _recorder!.setInitialSensors(initial);
+                  }
+
                   await _recorder!.recordSample(
                     sample.dataStream,
                     sample.dataUnit,
@@ -529,7 +535,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
     if (_recorder != null) return;
 
     try {
-      _recorder = CsvRecorder(folderPath: _saveFolderPath!);
+      // Create recorder with a callback that sets an error message if sensors change
+      _recorder = CsvRecorder(folderPath: _saveFolderPath!, onSensorsChanged: (newSensors) {
+        _errorMessage = 'Input sensors changed during recording: ${newSensors.join(', ')}';
+        notifyListeners();
+      });
       _recorder!.start();
     } catch (e) {
       _errorMessage = 'Failed to start recorder: $e';
