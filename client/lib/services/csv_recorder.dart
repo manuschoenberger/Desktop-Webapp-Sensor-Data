@@ -11,6 +11,9 @@ class CsvRecorder {
   // List of expected sensor names in the order they should appear in the CSV.
   final List<String> sensors;
 
+  // Normalized sensor keys used for mapping incoming samples to CSV columns.
+  late final List<String> _sensorKeys;
+
   IOSink? _sink;
   File? _file;
   bool _started = false;
@@ -19,7 +22,11 @@ class CsvRecorder {
 
   CsvRecorder({required this.folderPath, String? baseFileName, List<String>? sensors})
       : baseFileName = baseFileName ?? 'sensor_record',
-        sensors = sensors ?? const ['temperature', 'humidity'];
+        sensors = sensors ?? const ['temperature', 'humidity'] {
+    _sensorKeys = this.sensors
+        .map((s) => s.trim().toLowerCase().replaceAll(RegExp(r"\s+"), ''))
+        .toList();
+  }
 
   Future<void> start() async {
     final dir = Directory(folderPath);
@@ -61,14 +68,15 @@ class CsvRecorder {
     await _ensureFileOpen(sample.timestamp);
 
     final unix = sample.timestamp.millisecondsSinceEpoch ~/ 1000;
+    final key = _normalizeSensorName(sensorName);
 
     _pending.putIfAbsent(unix, () => {});
-    _pending[unix]![sensorName] = {
+    _pending[unix]![key] = {
       'unit': unit,
       'value': sample.value.toString(),
     };
 
-    if (_pending[unix]!.length == sensors.length) {
+    if (_pending[unix]!.length == _sensorKeys.length) {
       await _writeRowForTimestamp(unix);
     }
   }
@@ -89,7 +97,7 @@ class CsvRecorder {
     if (_sink == null) return;
     final parts = <String>[];
     parts.add('timestamp');
-    for (final s in sensors) {
+    for (final s in _sensorKeys) {
       parts.add('${s}_unit');
       parts.add('${s}_value');
     }
@@ -102,7 +110,7 @@ class CsvRecorder {
 
     final values = <String>[];
     values.add(unix.toString());
-    for (final s in sensors) {
+    for (final s in _sensorKeys) {
       final entry = rowMap[s];
       if (entry != null) {
         values.add(_escapeForCsv(entry['unit'] ?? ''));
@@ -133,5 +141,9 @@ class CsvRecorder {
   String _formatDate(DateTime dt) {
     String two(int v) => v.toString().padLeft(2, '0');
     return '${dt.year}${two(dt.month)}${two(dt.day)}_${two(dt.hour)}${two(dt.minute)}${two(dt.second)}';
+  }
+
+  String _normalizeSensorName(String name) {
+    return name.trim().toLowerCase().replaceAll(RegExp(r"\s+"), '');
   }
 }

@@ -114,10 +114,26 @@ void main() {
             reason: 'Each unit/value field should be quoted',
           );
 
-          // Ensure at least some data exists in the value fields (after removing quotes)
+          // Ensure quoted field does not contain raw quotes inside (they should be escaped)
           final inner = field.substring(1, field.length - 1);
           expect(inner.contains('"'), isFalse, reason: 'Quoted field should not contain raw quotes');
         }
+
+        final tempUnit = parts[1].trim();
+        final tempValue = parts[2].trim();
+        final humUnit = parts[3].trim();
+        final humValue = parts[4].trim();
+
+        String unquote(String s) => s.length >= 2 && s.startsWith('"') && s.endsWith('"') ? s.substring(1, s.length - 1) : s;
+
+        expect(unquote(tempUnit), equals('°C'), reason: 'Temperature unit should be °C in simulation');
+        expect(unquote(humUnit), equals('%'), reason: 'Humidity unit should be % in simulation');
+
+        final tempNum = double.tryParse(unquote(tempValue));
+        final humNum = double.tryParse(unquote(humValue));
+
+        expect(tempNum, isNotNull, reason: 'Temperature value should be a number');
+        expect(humNum, isNotNull, reason: 'Humidity value should be a number');
       }
 
       try {
