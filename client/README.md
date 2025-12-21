@@ -1,4 +1,4 @@
-# hello_world
+# sensor_dash
 
 A new Flutter project.
 
