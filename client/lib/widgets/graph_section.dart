@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
-import 'package:sensor_data_app/widgets/graph_plot.dart';
+import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/widgets/graph_plot.dart';
 
 class GraphSection extends StatefulWidget {
   final SerialConnectionViewModel viewModel;

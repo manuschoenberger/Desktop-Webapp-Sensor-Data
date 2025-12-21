@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:sensor_data_app/models/sampled_value.dart';
-import 'package:sensor_data_app/models/sensor_packet.dart';
+import 'package:sensor_dash/models/sampled_value.dart';
+import 'package:sensor_dash/models/sensor_packet.dart';
 
 class SamplingManager {
   static const int samplingIntervalSeconds = 1; // Sample every 1 second

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
-import 'package:sensor_data_app/services/json_parser.dart';
-import 'package:sensor_data_app/models/sensor_packet.dart';
+import 'package:sensor_dash/services/json_parser.dart';
+import 'package:sensor_dash/models/sensor_packet.dart';
 import 'dart:async';
 
 typedef PacketCallback = void Function(SensorPacket packet);

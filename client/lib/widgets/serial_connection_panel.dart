@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
 
 class SerialConnectionPanel extends StatelessWidget {
   final SerialConnectionViewModel viewModel;
