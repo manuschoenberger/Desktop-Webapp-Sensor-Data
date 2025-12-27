@@ -61,7 +61,7 @@ jobs:
           cp -r client/build/linux/x64/release/bundle/* \
             $PKG_DIR/usr/lib/$APP_ID/
 
-          ln -s /usr/lib/$APP_ID/$APP_ID \
+          ln -s /usr/lib/$APP_ID/$APP_NAME \
             $PKG_DIR/usr/bin/$APP_ID
 
           cat <<EOF > $PKG_DIR/usr/share/applications/$APP_ID.desktop
