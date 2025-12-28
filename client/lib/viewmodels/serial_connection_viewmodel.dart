@@ -269,11 +269,32 @@ class SerialConnectionViewModel extends ChangeNotifier {
           } catch (_) {}
 
           final sensorNames = packet.payload.map((s) => s.displayName).toList();
+          
           if (_availableSensors.isEmpty) {
+            // First time: initialize sensors
             _availableSensors = sensorNames;
-
             if (_selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               _selectedSensorForPlot = sensorNames.first;
+            }
+          } else {
+            // Check if sensors have changed
+            final currentSet = _availableSensors.toSet();
+            final newSet = sensorNames.toSet();
+            
+            if (currentSet != newSet) {
+              if (!_isRecording) {
+                // Update sensors if not recording
+                _availableSensors = sensorNames;
+                
+                // If selected sensor is no longer available, reset to first available
+                if (_selectedSensorForPlot != null && 
+                    !sensorNames.contains(_selectedSensorForPlot)) {
+                  _selectedSensorForPlot = sensorNames.isNotEmpty ? sensorNames.first : null;
+                }
+              } else {
+                // Show warning if recording and sensors changed
+                _errorMessage = 'Sensors changed during recording. Please stop recording to update.';
+              }
             }
           }
 
