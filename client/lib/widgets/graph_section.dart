@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'package:sensor_dash/widgets/graph_plot.dart';
 
 class GraphSection extends StatefulWidget {
-  final ConnectionManagerViewModel viewModel;
+  final ConnectionBaseViewModel viewModel;
   const GraphSection({super.key, required this.viewModel});
 
   @override
@@ -13,7 +13,7 @@ class GraphSection extends StatefulWidget {
 }
 
 class _GraphSectionState extends State<GraphSection> {
-  Future<void> _pickFolder(ConnectionManagerViewModel vm) async {
+  Future<void> _pickFolder(ConnectionBaseViewModel vm) async {
     try {
       String? folderPath;
 

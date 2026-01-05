@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import '../main.dart';
 
 class SettingsDialog extends StatefulWidget {
   final ThemeMode currentThemeMode;
-  final ConnectionManagerViewModel? viewModel;
+  final ConnectionBaseViewModel? viewModel;
 
   const SettingsDialog({
     super.key,

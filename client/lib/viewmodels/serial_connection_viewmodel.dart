@@ -3,9 +3,9 @@ import 'package:sensor_dash/services/sampling_manager.dart';
 import 'dart:developer';
 import 'dart:async';
 
-import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
-class SerialConnectionViewModel extends ConnectionManagerViewModel {
+class SerialConnectionViewModel extends ConnectionBaseViewModel {
   final SerialSource Function(String port, int baud, {bool simulate})
   _serialFactory;
 

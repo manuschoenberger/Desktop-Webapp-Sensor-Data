@@ -8,7 +8,7 @@ import 'package:sensor_dash/services/csv_recorder.dart';
 import 'package:sensor_dash/services/csv_loader.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 
-abstract class ConnectionManagerViewModel extends ChangeNotifier {
+abstract class ConnectionBaseViewModel extends ChangeNotifier {
   bool _isConnected = false;
   bool _isRecording = false;
   String? _errorMessage;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'package:sensor_dash/viewmodels/connection_selection_viewmodel.dart';
 import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
 import 'package:sensor_dash/viewmodels/udp_connection_viewmodel.dart';
@@ -20,8 +20,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final ConnectionSelectionViewmodel _connectionSelectionViewmodel;
-  late final Map<ConnectionType, ConnectionManagerViewModel>
-  _connectionViewModels;
+  late final Map<ConnectionType, ConnectionBaseViewModel> _connectionViewModels;
 
   @override
   void initState() {
@@ -58,7 +57,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  ConnectionManagerViewModel? get _csvOwnerVm {
+  ConnectionBaseViewModel? get _csvOwnerVm {
     for (final vm in _connectionViewModels.values) {
       if (vm.isCsvMode) return vm;
     }
@@ -73,7 +72,7 @@ class _HomePageState extends State<HomePage> {
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: AppMenu(
           currentThemeMode: MyApp.getThemeMode(context),
-          connectionManagerViewModel:
+          connectionBaseViewModel:
               _connectionViewModels[_connectionSelectionViewmodel
                   .currentConnection],
         ),

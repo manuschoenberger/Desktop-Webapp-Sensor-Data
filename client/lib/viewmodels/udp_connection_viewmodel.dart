@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'package:sensor_dash/services/udp_source.dart';
-import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
-class UdpConnectionViewModel extends ConnectionManagerViewModel {
+class UdpConnectionViewModel extends ConnectionBaseViewModel {
   final UdpSource Function(String address, int port) _udpFactory;
 
   UdpConnectionViewModel({UdpSource Function(String, int)? serialFactory})

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'package:sensor_dash/viewmodels/connection_selection_viewmodel.dart';
 
 class ConnectionSelectionPanel extends StatelessWidget {
   final ConnectionSelectionViewmodel viewModel;
-  final ConnectionManagerViewModel connectionVm;
+  final ConnectionBaseViewModel connectionVm;
 
   const ConnectionSelectionPanel({
     super.key,
