@@ -102,7 +102,11 @@ class UdpConnectionViewModel extends ConnectionManagerViewModel {
             setCurrentSamples(samples);
             for (var sample in samples) {
               // Only add the selected sensor to the graph
-              addSampleToGraph(sample.dataStream, sample.value);
+              addSampleToGraph(
+                sample.dataStream,
+                sample.value,
+                sample.dataUnit,
+              );
               setCurrentSensorUnit(sample.dataUnit);
 
               if (graphStartTime.isEmpty && isRecording) {

@@ -40,6 +40,11 @@ abstract class ConnectionManagerViewModel extends ChangeNotifier {
   bool _graphSliding = false;
   String _graphStartTime = "";
 
+  // Statistics per data stream
+  final Map<String, double> _minValues = {};
+  final Map<String, double> _maxValues = {};
+  final Map<String, double> _avgValues = {};
+
   // Getters
   bool get isConnected => _isConnected;
   bool get isRecording => _isRecording;
@@ -60,6 +65,15 @@ abstract class ConnectionManagerViewModel extends ChangeNotifier {
   List<String> get availableSensors => _availableSensors;
   List<SampledValue>? get currentSamples => _currentSamples;
   CsvRecorder? get recorder => _recorder;
+  double get minValue => _selectedSensorForPlot != null
+      ? _minValues[_selectedSensorForPlot] ?? double.infinity
+      : double.infinity;
+  double get maxValue => _selectedSensorForPlot != null
+      ? _maxValues[_selectedSensorForPlot] ?? double.negativeInfinity
+      : double.negativeInfinity;
+  double get avgValue => _selectedSensorForPlot != null
+      ? _avgValues[_selectedSensorForPlot] ?? 0
+      : 0;
 
   // Setters
   @protected
@@ -365,10 +379,33 @@ abstract class ConnectionManagerViewModel extends ChangeNotifier {
         const [];
   }
 
-  void addSampleToGraph(String dataStream, double value) {
-    if (!isRecording) return; // Only plot when recording
+  void addSampleToGraph(String dataStream, double value, String unit) {
+    if (!_isRecording) return; // Only plot when recording
     _graphPoints.putIfAbsent(dataStream, () => []);
     _graphPoints[dataStream]!.add(FlSpot(_graphIndex.toDouble(), value));
+
+    // Update statistics for this data stream
+    _minValues.putIfAbsent(dataStream, () => double.infinity);
+    _maxValues.putIfAbsent(dataStream, () => double.negativeInfinity);
+    _avgValues.putIfAbsent(dataStream, () => 0);
+
+    if (value < _minValues[dataStream]!) {
+      _minValues[dataStream] = value;
+    }
+
+    if (value > _maxValues[dataStream]!) {
+      _maxValues[dataStream] = value;
+    }
+
+    // Calculate running average
+    final currentAvg = _avgValues[dataStream]!;
+    final count = _graphPoints[dataStream]!.length;
+    _avgValues[dataStream] = ((currentAvg * (count - 1)) + value) / count;
+
+    // Update unit only for the selected sensor
+    if (dataStream == _selectedSensorForPlot) {
+      _currentSensorUnit = unit;
+    }
 
     if (!_graphSliding) {
       _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
@@ -406,6 +443,10 @@ abstract class ConnectionManagerViewModel extends ChangeNotifier {
     _availableSensors = [];
     _selectedSensorForPlot = null;
     _currentSensorUnit = null;
+    // Reset statistics
+    _minValues.clear();
+    _maxValues.clear();
+    _avgValues.clear();
     if (resetVisibleRange) {
       _visibleRange = 60;
     }
