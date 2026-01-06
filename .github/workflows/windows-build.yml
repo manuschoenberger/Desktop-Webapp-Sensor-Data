@@ -1,0 +1,47 @@
+name: Build Windows App
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+        working-directory: client
+
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: client
+
+      - name: Run Flutter tests
+        run: flutter test
+        working-directory: client
+
+      - name: Build Windows release
+        run: flutter build windows --release
+        working-directory: client
+
+      - name: Create ZIP package
+        run: |
+          cd client/build/windows/x64/runner/Release
+          powershell Compress-Archive -Path * -DestinationPath SensorDash-windows-${{ github.ref_name }}.zip
+
+      - name: Upload Windows ZIP to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: client/build/windows/x64/runner/Release/SensorDash-windows-${{ github.ref_name }}.zip
