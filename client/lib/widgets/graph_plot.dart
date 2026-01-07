@@ -37,8 +37,18 @@ class LineChartGraph extends StatelessWidget {
     return SideTitleWidget(
       meta: meta,
       space: 16,
-      child: Text(meta.formattedValue, style: style),
+      child: Text(_formatYTextValue(value), style: style),
     );
+  }
+
+  String _formatYTextValue(double value) {
+    if (value.abs() >= 1000) {
+      return value.toStringAsFixed(0);
+    } else if (value.abs() >= 100) {
+      return value.toStringAsFixed(1);
+    } else {
+      return value.toStringAsFixed(2);
+    }
   }
 
   double _calculateIntervalX() {
