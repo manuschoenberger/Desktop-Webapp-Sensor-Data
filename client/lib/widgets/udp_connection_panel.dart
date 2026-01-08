@@ -45,7 +45,9 @@ class UdpConnectionPanel extends StatelessWidget {
                         : viewModel.updateAddress,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: !viewModel.isConnected
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).disabledColor,
                     ),
                     enabled: !viewModel.isConnected,
                     decoration: const InputDecoration(
@@ -69,7 +71,9 @@ class UdpConnectionPanel extends StatelessWidget {
                         : viewModel.updatePort,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: !viewModel.isConnected
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).disabledColor,
                     ),
                     enabled: !viewModel.isConnected,
                     decoration: const InputDecoration(
