@@ -67,7 +67,19 @@ class LineChartGraph extends StatelessWidget {
       return 1;
     }
 
-    final rawInterval = range / 8;
+    // based on range, set amount of horizontal lines
+    int lines = 8;
+    if (range < 1) {
+      lines = 1;
+    } else if (range < 2.5) {
+      lines = 2;
+    } else if (range < 5) {
+      lines = 4;
+    } else if (range < 10) {
+      lines = 6;
+    }
+
+    final rawInterval = range / lines;
     final exponent = pow(10, (log(rawInterval) / ln10).floor());
     final fraction = rawInterval / exponent;
 
