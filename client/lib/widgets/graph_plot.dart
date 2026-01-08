@@ -37,17 +37,64 @@ class LineChartGraph extends StatelessWidget {
     return SideTitleWidget(
       meta: meta,
       space: 16,
-      child: Text(meta.formattedValue, style: style),
+      child: Text(_formatYTextValue(value), style: style),
     );
   }
 
-  double _calculateInterval() {
+  String _formatYTextValue(double value) {
+    if (value.abs() >= 1000) {
+      return value.toStringAsFixed(0);
+    } else if (value.abs() >= 100) {
+      return value.toStringAsFixed(1);
+    } else {
+      return value.toStringAsFixed(2);
+    }
+  }
+
+  double _calculateIntervalX() {
     if (visibleRange <= 10) return 1.0;
     if (visibleRange <= 30) return 2.0;
     if (visibleRange <= 60) return 5.0;
     if (visibleRange <= 120) return 10.0;
     if (visibleRange <= 180) return 20.0;
     return 20.0; // For 180+ seconds, use 1 minute intervals
+  }
+
+  double _calculateIntervalY(double minY, double maxY) {
+    final range = maxY - minY;
+
+    if (range == 0) {
+      return 1;
+    }
+
+    // based on range, set amount of horizontal lines
+    int lines = 8;
+    if (range < 1) {
+      lines = 1;
+    } else if (range < 2.5) {
+      lines = 2;
+    } else if (range < 5) {
+      lines = 4;
+    } else if (range < 10) {
+      lines = 6;
+    }
+
+    final rawInterval = range / lines;
+    final exponent = pow(10, (log(rawInterval) / ln10).floor());
+    final fraction = rawInterval / exponent;
+
+    double fractionInterval;
+    if (fraction < 1.5) {
+      fractionInterval = 1;
+    } else if (fraction < 3) {
+      fractionInterval = 2;
+    } else if (fraction < 7) {
+      fractionInterval = 5;
+    } else {
+      fractionInterval = 10;
+    }
+
+    return fractionInterval * exponent;
   }
 
   @override
@@ -60,10 +107,11 @@ class LineChartGraph extends StatelessWidget {
         ? 1
         : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
 
-    const double padding = 0.2;
+    final intervalX = _calculateIntervalX();
 
-    final double minY = minYValue - padding;
-    final double maxY = maxYValue + padding;
+    final intervalY = _calculateIntervalY(minYValue, maxYValue);
+    final double minY = (minYValue / intervalY).floor() * intervalY;
+    final double maxY = (maxYValue / intervalY).ceil() * intervalY;
 
     return Padding(
       padding: const EdgeInsets.only(left: 12, bottom: 12, right: 20, top: 20),
@@ -86,7 +134,7 @@ class LineChartGraph extends StatelessWidget {
                         fontSize: 14,
                       );
                       return LineTooltipItem(
-                        '${touchedSpot.x.toInt()}s, ${touchedSpot.y.toStringAsFixed(2)} $sensorUnit',
+                        '${touchedSpot.x.toInt()}s, ${touchedSpot.y.toStringAsFixed(2)}$sensorUnit',
                         textStyle,
                       );
                     }).toList();
@@ -116,6 +164,7 @@ class LineChartGraph extends StatelessWidget {
                     getTitlesWidget: (value, meta) =>
                         leftTitleWidgets(value, meta, constraints.maxWidth),
                     reservedSize: 56,
+                    interval: intervalY,
                   ),
                   drawBelowEverything: true,
                 ),
@@ -128,7 +177,7 @@ class LineChartGraph extends StatelessWidget {
                     getTitlesWidget: (value, meta) =>
                         bottomTitleWidgets(value, meta, constraints.maxWidth),
                     reservedSize: 36,
-                    interval: _calculateInterval(),
+                    interval: intervalX,
                   ),
                   drawBelowEverything: true,
                 ),
@@ -140,8 +189,8 @@ class LineChartGraph extends StatelessWidget {
                 show: true,
                 drawHorizontalLine: true,
                 drawVerticalLine: true,
-                horizontalInterval: _calculateInterval(),
-                verticalInterval: _calculateInterval(),
+                verticalInterval: intervalX,
+                horizontalInterval: intervalY,
                 getDrawingHorizontalLine: (_) => FlLine(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   dashArray: [5, 5],
