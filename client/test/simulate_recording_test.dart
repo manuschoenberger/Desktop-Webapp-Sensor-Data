@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -12,11 +13,12 @@ void main() {
     () async {
       final tempDir = await Directory.systemTemp.createTemp('csvrec_test');
       final vm = SerialConnectionViewModel(
-        serialFactory: (port, baud, {simulate = false}) {
+        serialFactory: (port, baud, {simulate = false, dataFormat = DataFormat.json}) {
           return SerialSource(
             port,
             baud,
             simulate: true,
+            dataFormat: dataFormat,
           ); // TEST: always simulated
         },
       );
