@@ -102,11 +102,9 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
         },
         onError: (error) {
           log('UDP error: $error');
-          if (isRecording) {
-            setErrorMessage(error);
-            stopRecording();
-            notifyListeners();
-          }
+          setErrorMessage(error);
+          disconnect();
+          notifyListeners();
         },
       );
 

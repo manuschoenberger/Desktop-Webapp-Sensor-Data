@@ -57,7 +57,7 @@ class UdpSource {
               }
               onError?.call(
                 'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
-                'Please disconnect and check your data format settings.',
+                'Please check your data format settings.',
               );
             }
           }

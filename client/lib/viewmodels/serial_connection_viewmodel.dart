@@ -105,11 +105,9 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
           },
           onError: (error) {
             log('Serial error: $error');
-            if (isRecording) {
-              setErrorMessage(error);
-              stopRecording();
-              notifyListeners();
-            }
+            setErrorMessage(error);
+            disconnect();
+            notifyListeners();
           },
         );
 
@@ -243,11 +241,9 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
         },
         onError: (error) {
           log('Serial error: $error');
-          if (isRecording) {
-            setErrorMessage(error);
-            stopRecording();
-            notifyListeners();
-          }
+          setErrorMessage(error);
+          disconnect();
+          notifyListeners();
         },
       );
 
