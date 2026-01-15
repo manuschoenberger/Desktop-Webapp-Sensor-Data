@@ -3,13 +3,16 @@ import 'package:sensor_dash/services/sampling_manager.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 import 'package:sensor_dash/models/sampled_value.dart';
 import 'package:sensor_dash/services/csv_recorder.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 /// Full simulation controller that encapsulates SimulationConnection-like
 /// behavior and also implements the sample-routing / recorder / graph logic.
 class SimulationController {
-  final SerialSource Function(String, int, {bool simulate}) serialFactory;
+  final SerialSource Function(String, int, {bool simulate, DataFormat dataFormat})
+      serialFactory;
   final String port;
   final int baud;
+  final DataFormat dataFormat;
   final ReductionMethod reductionMethod;
 
   SerialSource? _source;
@@ -20,6 +23,7 @@ class SimulationController {
     required this.port,
     required this.baud,
     this.reductionMethod = ReductionMethod.average,
+    this.dataFormat = DataFormat.json,
   });
 
   SerialSource? get source => _source;
@@ -40,7 +44,7 @@ class SimulationController {
     required void Function(int) addToGraphIndex,
     required void Function() notifyListeners,
   }) {
-    _source = serialFactory(port, baud, simulate: true);
+    _source = serialFactory(port, baud, simulate: true, dataFormat: dataFormat);
 
     final success = _source!.connect(
       onPacket: (packet) {
@@ -123,4 +127,3 @@ class SimulationController {
     _source = null;
   }
 }
-

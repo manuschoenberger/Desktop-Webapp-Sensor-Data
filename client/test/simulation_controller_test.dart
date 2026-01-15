@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sensor_dash/services/simulation_controller.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 import 'package:sensor_dash/models/sampled_value.dart';
 import 'package:sensor_dash/models/sensor_packet.dart' as sp_models;
@@ -43,7 +44,7 @@ class FakeCsvRecorder extends CsvRecorder {
 void main() {
   test('SimulationController connects and exposes source and samplingManager', () {
     final controller = SimulationController(
-      serialFactory: (p, b, {simulate = false}) => FakeSerialSource(p, b, simulate: simulate) as dynamic,
+      serialFactory: (p, b, {simulate = false, dataFormat = DataFormat.json}) => FakeSerialSource(p, b, simulate: simulate) as dynamic,
       port: 'COM1',
       baud: 115200,
     );
@@ -72,7 +73,7 @@ void main() {
 
   test('SimulationController routes samples to recorder and graph callbacks', () async {
     final controller = SimulationController(
-      serialFactory: (p, b, {simulate = false}) => FakeSerialSource(p, b, simulate: simulate) as dynamic,
+      serialFactory: (p, b, {simulate = false, dataFormat = DataFormat.json}) => FakeSerialSource(p, b, simulate: simulate) as dynamic,
       port: 'COM1',
       baud: 115200,
     );
