@@ -22,6 +22,10 @@ class SerialConnectionPanel extends StatelessWidget {
     viewModel.disconnect();
   }
 
+  Future<void> _handleRefreshPorts(BuildContext context) async {
+    await viewModel.refreshPorts();
+  }
+
   @override
   Widget build(BuildContext context) {
     // ListenableBuilder automatically rebuilds when model.notifyListeners() is called
@@ -74,7 +78,7 @@ class SerialConnectionPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 DropdownButton<String>(
                   value: viewModel.selectedPort,
-                  items: SerialConnectionViewModel.availablePorts
+                  items: viewModel.availablePorts
                       .map(
                         (port) =>
                             DropdownMenuItem(value: port, child: Text(port)),
@@ -84,7 +88,21 @@ class SerialConnectionPanel extends StatelessWidget {
                       ? null // Lock when connected
                       : (value) => viewModel.selectPort(value),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: viewModel.isScanning
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  onPressed: viewModel.isConnected || viewModel.isScanning
+                      ? null // Disable when connected or scanning
+                      : () => _handleRefreshPorts(context),
+                  tooltip: 'Refresh Ports',
+                ),
+                const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: viewModel.isConnected
                       ? () => _handleDisconnect(context)

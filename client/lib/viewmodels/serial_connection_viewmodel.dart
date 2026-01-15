@@ -1,3 +1,4 @@
+import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'dart:developer';
@@ -25,6 +26,8 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                SerialSource(p, b, simulate: simulate, dataFormat: dataFormat)) {
     // Initialize a cross-platform default save folder (user can still change it)
     initDefaultSaveFolder();
+
+    _scanPorts();
   }
 
   // Connection state
@@ -39,6 +42,8 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
   SimulationController? _simulationController;
 
   bool _isSimulated = false;
+  List<String> _availablePorts = [];
+  bool _isScanning = false;
 
   static const List<int> availableBaudrates = [
     9600,
@@ -49,18 +54,12 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     230400,
   ];
 
-  static const List<String> availablePorts = [
-    "COM1",
-    "COM2",
-    "COM3",
-    "COM4",
-    "COM5",
-  ];
-
   // Getters
   String? get selectedPort => _selectedPort;
   int get selectedBaudrate => _selectedBaudrate;
   bool get isSimulated => _isSimulated;
+  List<String> get availablePorts => _availablePorts;
+  bool get isScanning => _isScanning;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -73,6 +72,49 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     if (isConnected) return;
     _selectedBaudrate = baudrate;
     notifyListeners();
+  }
+
+  Future<void> refreshPorts() async {
+    await _scanPorts();
+  }
+
+  // Scan for available serial ports
+  Future<void> _scanPorts() async {
+    if (_isScanning) return;
+
+    _isScanning = true;
+    notifyListeners();
+
+    try {
+      // Run the blocking call in a separate isolate to prevent UI freezing
+      final ports = await compute(_getAvailablePorts, null);
+
+      if (!listEquals(_availablePorts, ports)) {
+        _availablePorts = ports..sort();
+
+        if (_selectedPort == null && _availablePorts.isNotEmpty) {
+          _selectedPort = _availablePorts.first;
+        }
+
+        // If selected port is no longer available, reset selection
+        if (_selectedPort != null && !_availablePorts.contains(_selectedPort)) {
+          _selectedPort = _availablePorts.isNotEmpty
+              ? _availablePorts.first
+              : null;
+        }
+
+        notifyListeners();
+      }
+    } catch (e) {
+      log('Error scanning ports: $e');
+    } finally {
+      _isScanning = false;
+      notifyListeners();
+    }
+  }
+
+  static List<String> _getAvailablePorts(void _) {
+    return SerialPort.availablePorts;
   }
 
   Future<String?> connect({
@@ -369,6 +411,10 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     _samplingManager = null;
 
     super.disconnect();
+
+    // Resume port scanning after disconnect
+    _scanPorts();
+
     notifyListeners();
   }
 
