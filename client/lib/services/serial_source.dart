@@ -21,6 +21,7 @@ class SerialSource {
   Timer? _simTimer;
   int _simCounter = 0;
   String _buffer = ''; // Buffer for incomplete lines
+  int _packetCount = 0; // Count packets to skip initial ones
 
   SerialSource(
     this.portName,
@@ -76,6 +77,21 @@ class SerialSource {
         return false;
       }
 
+      final config = SerialPortConfig()
+        ..baudRate = baudRate
+        ..bits = 8
+        ..parity = SerialPortParity.none
+        ..stopBits = 1
+        ..setFlowControl(SerialPortFlowControl.none);
+
+      port!.config = config;
+
+      // Flush the input buffer to clear any old data
+      port!.flush(SerialPortBuffer.input);
+
+      // Reset packet counter for this connection
+      _packetCount = 0;
+
       reader = SerialPortReader(port!);
       reader!.stream.listen(
         (data) {
@@ -92,18 +108,44 @@ class SerialSource {
               continue;
             }
 
-            final packet = dataFormat == DataFormat.json
-                ? JsonParser.parse(line)
-                : CsvParser.parse(line);
+            try {
+              final packet = dataFormat == DataFormat.json
+                  ? JsonParser.parse(line)
+                  : CsvParser.parse(line);
 
-            if (packet != null) {
-              onPacket(packet);
-            } else {
-              // Parsing failed - wrong data format
-              onError?.call(
-                'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
-                'Please check your data format settings.',
-              );
+              if (packet != null) {
+                // Skip the first packet to avoid partial data from buffer
+                if (_packetCount < 1) {
+                  _packetCount++;
+                  if (kDebugMode) {
+                    print('Skipping initial packet to avoid buffer issues');
+                  }
+                  continue;
+                }
+
+                onPacket(packet);
+              } else {
+                // Only report error if we've passed the initial packets
+                if (_packetCount >= 1) {
+                  onError?.call(
+                    'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
+                    'Please check your data format settings.',
+                  );
+                }
+              }
+            } catch (e) {
+              // Skip parsing errors on initial packets
+              if (_packetCount >= 1) {
+                if (kDebugMode) {
+                  print('Parse error: $e');
+                }
+                onError?.call(
+                  'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
+                  'Error: $e',
+                );
+              } else {
+                _packetCount++;
+              }
             }
           }
         },
