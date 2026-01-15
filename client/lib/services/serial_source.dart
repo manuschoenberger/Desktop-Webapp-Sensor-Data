@@ -71,18 +71,25 @@ class SerialSource {
 
     try {
       port = SerialPort(portName);
-      port!.config.baudRate = baudRate;
 
+      // Open port first before configuring
       if (!port!.openReadWrite()) {
+        final lastErrorCode = SerialPort.lastError;
         return false;
       }
 
-      final config = SerialPortConfig()
-        ..baudRate = baudRate
-        ..bits = 8
-        ..parity = SerialPortParity.none
-        ..stopBits = 1
-        ..setFlowControl(SerialPortFlowControl.none);
+      // Configure port after opening (important for VMs and some hardware)
+      final config = port!.config;
+      config.baudRate = baudRate;
+      config.bits = 8;
+      config.parity = SerialPortParity.none;
+      config.stopBits = 1;
+
+      // Disable all flow control for better VM compatibility
+      config.rts = SerialPortRts.off;
+      config.cts = SerialPortCts.ignore;
+      config.dsr = SerialPortDsr.ignore;
+      config.dtr = SerialPortDtr.off;
 
       port!.config = config;
 
@@ -162,8 +169,16 @@ class SerialSource {
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Serial connection exception: $e');
+      // Clean up on error
+      try {
+        reader?.close();
+        port?.close();
+      } catch (_) {}
+      reader = null;
+      port = null;
+
+      if (onError != null) {
+        onError('Failed to connect to $portName: $e');
       }
       return false;
     }
