@@ -15,6 +15,7 @@ class SerialConnectionPanel extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error), backgroundColor: Colors.red),
       );
+      viewModel.clearError();
     }
   }
 
